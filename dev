@@ -1,0 +1,69 @@
+Good, it's running. Here are the final working files.
+
+## nodejs-configmap.yaml
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nodejs-app-config
+data:
+  server.js: |
+    const http = require("http");
+    const port = 3000;
+
+    const server = http.createServer((req, res) => {
+      res.end("Hello from Node.js running inside Kubernetes!");
+    });
+
+    server.listen(port, () => {
+      console.log(`Server running at port ${port}`);
+    });
+```
+
+## nodejs-pod.yaml
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nodejs-pod
+  labels:
+    app: nodejs
+spec:
+  containers:
+  - name: nodejs
+    image: node:18-alpine
+    imagePullPolicy: IfNotPresent
+    command: ["node", "/usr/src/app/server.js"]
+    ports:
+    - containerPort: 3000
+    volumeMounts:
+    - name: app-code
+      mountPath: /usr/src/app
+  volumes:
+  - name: app-code
+    configMap:
+      name: nodejs-app-config
+```
+
+If you ended up using `node:18` instead of `node:18-alpine`, change that one line to match what worked for you.
+
+## Commands (from the manual)
+
+```bash
+kubectl apply -f nodejs-configmap.yaml
+kubectl apply -f nodejs-pod.yaml
+kubectl get pods
+kubectl port-forward pod/nodejs-pod 3000:3000
+```
+
+Open `http://localhost:3000` for the output. Cleanup:
+
+```bash
+kubectl delete pods --all
+kubectl delete svc --all
+kubectl delete configmap nodejs-app-config
+```
+
+For your record, take screenshots of `kubectl get pods` showing `Running` and the browser output, since the manual's Figures 20 and 21 show those.
